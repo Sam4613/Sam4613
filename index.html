@@ -1,0 +1,16 @@
+!DOCTYPE html>
+<html>
+  <head>
+    <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
+    <script src="https://cdn.rawgit.com/jeromeetienne/AR.js/1.7.4/aframe/build/aframe-ar.js"></script>
+  </head>
+  <body>
+    <a-scene embedded arjs>
+      <a-assets>
+        <a-asset-item id="tree" src="https://cdn.aframe.io/examples/assets/tree/tree.glb"></a-asset-item>
+      </a-assets>
+      <a-entity gps-camera></a-entity>
+      <a-entity gps-entity-place="latitude: 25.226346; longitude: 55.272822;" gltf-model="#tree"></a-entity>
+    </a-scene>
+  </body>
+</html>

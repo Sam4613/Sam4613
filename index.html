@@ -42,13 +42,123 @@
             entity.setAttribute('position', location);
             loader.load(entity.getAttribute('gltf-model'), function (gltf) {
               var model = gltf.scene;
-              model.position.set(location.x, location.y, location.z);
+              model.position.set(location.x, location.y + (model.geometry.boundingBox.max.y - model.geometry.boundingBox.min.y) / 2, location.z);
               model.scale.set(entity.getAttribute('scale').x, entity.getAttribute('scale').y, entity.getAttribute('scale').z);
               entity.setObject3D('mesh', model);
             });
           }
         });
-      </script>
-    </a-scene>
-  </body>
+
+        AFRAME.registerComponent('gps-camera', {
+          schema: {
+            minimumAltitude: { type: 'number', default: 0 }
+          },
+
+          init: function () {
+            var self = this;
+            var scene = this.el.sceneEl;
+
+            scene.addEventListener('loaded', function () {
+              if (navigator.geolocation) {
+                navigator.geolocation.watchPosition(function (position) {
+                  var altitude = position.coords.altitude || 0;
+                  if (altitude >= self.data.minimumAltitude) {
+                    var coords = {
+                      latitude: position.coords.latitude,
+                      longitude: position.coords.longitude
+                    };
+                    self.setPosition(coords);
+                    self.setRotation(coords);
+                  }
+                });
+              }
+            });
+          },
+
+          setPosition: function (coords) {
+            var entity = this.el;
+            entity.setAttribute('gps-projected-camera', coords);
+          },
+          AFRAME.registerComponent('gps-projected-camera', {
+schema: {
+latitude: { type: 'number' },
+longitude: { type: 'number' },
+altitude: { type: 'number' }
+},
+        init: function () {
+        var camera = this.el;
+        var position = this.data.position;
+        var location = new THREE.Vector3();
+        location.x = position.x;
+        location.y = position.y;
+        location.z = position.z;
+        camera.setAttribute('position', location);
+      },
+
+      update: function () {
+        var camera = this.el;
+        var position = this.data.position;
+        var location = new THREE.Vector3();
+        location.x = position.x;
+        location.y = position.y;
+        location.z = position.z;
+        camera.setAttribute('position', location);
+      },
+
+      tick: function () {
+        var camera = this.el.object3D;
+        var gpsEntity = document.querySelector('[gps-entity-place]');
+        if (gpsEntity) {
+          var gpsLocation = gpsEntity.object3D.getWorldPosition();
+          var distance = gpsEntity.getAttribute('position').distanceTo(camera.position);
+          var angle = gpsEntity.object3D.getWorldQuaternion().angleTo(camera.quaternion);
+          var deltaAltitude = gpsLocation.y - camera.position.y;
+
+          if (angle < Math.PI / 2 && distance < 50 && deltaAltitude >= 0) {
+            var location = new THREE.Vector3();
+            location.x = gpsLocation.x - ((camera.position.x - gpsLocation.x) / 2);
+            location.y = gpsLocation.y - ((camera.position.y - gpsLocation.y) / 2);
+            location.z = gpsLocation.z - ((camera.position.z - gpsLocation.z) / 2);
+
+            this.data.position = location;
+          }
+        }
+      }
+    });
+
+    AFRAME.registerComponent('rotation-reader', {
+      schema: {
+        enabled: { default: true }
+      },
+
+      init: function () {
+        this.handleRotation = this.handleRotation.bind(this);
+      },
+
+      play: function () {
+        window.addEventListener('deviceorientation', this.handleRotation);
+      },
+
+      pause: function () {
+        window.removeEventListener('deviceorientation', this.handleRotation);
+      },
+
+      handleRotation: function (event) {
+        if (!this.data.enabled) {
+          return;
+        }
+
+        var camera = this.el.object3D;
+        var alpha = THREE.Math.degToRad(event.alpha);
+        var beta = THREE.Math.degToRad(event.beta);
+        var gamma = THREE.Math.degToRad(event.gamma);
+
+        var euler = new THREE.Euler();
+        euler.set(beta, alpha, -gamma, 'YXZ');
+        camera.quaternion.setFromEuler(euler);
+      }
+    });
+  </script>
+</a-scene>
+ </body>
 </html>

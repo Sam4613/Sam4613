@@ -6,6 +6,7 @@
     <title>AR App</title>
     <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
     <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
+    <script src="https://raw.githack.com/jeromeetienne/AR.js/master/aframe/build/aframe-ar-nft.js"></script>
   </head>
   <body>
     <a-scene embedded arjs>
@@ -40,41 +41,37 @@
             var distance = this.data.distance;
             this.el.setAttribute('visible', false);
             this.el.addEventListener('loaded', function () {
-              var model = this.getObject3D('mesh');
-              var bbox = new THREE.Box3().setFromObject(model);
-              var size = new THREE.Vector3();
-              bbox.getSize(size);
-              var distanceToBox = (size.z / 2) + distance;
-              this.setAttribute('position', '0 0 -' + distanceToBox);
-              this.setAttribute('visible', true);
-            });
-          }
-        });
-        
-        AFRAME.registerComponent('look-at-camera', {
-          tick: function () {
-            this.el.object3D.lookAt(this.el.sceneEl.camera.getWorldPosition());
-          }
-        });
-        
-        var scene = document.querySelector('a-scene');
-        scene.addEventListener('loaded', function () {
-          if (navigator.geolocation) {
-            navigator.geolocation.watchPosition(function (position) {
-              var altitude = position.coords.altitude || 0;
-              var camera = document.querySelector('[camera]');
-              camera.setAttribute('gps-camera', 'latitude: ' + position.coords.latitude + '; longitude: ' + position.coords.longitude + '; altitude: ' + altitude);
+              var model = this.el.getObject3D('mesh');
+var bbox = new THREE.Box3().setFromObject(model);
+var size = new THREE.Vector3();
+bbox.getSize(size);
+var distanceToBox = (size.z / 2) + distance;
+this.setAttribute('position', '0 0 -' + distanceToBox);
+this.setAttribute('visible', true);
 });
-} else {
-console.log('Geolocation is not supported by this browser.');
 }
 });
-          </script>
-</head>
-<body>
-  <a-scene>
-    <a-entity gps-camera rotation-reader></a-entity>
-  </a-scene>
-</body>
-  </html>
-<!-- End of HTML code --> 
+            AFRAME.registerComponent('look-at-camera', {
+      tick: function () {
+        this.el.object3D.lookAt(this.el.sceneEl.camera.getWorldPosition());
+      }
+    });
+    
+    var scene = document.querySelector('a-scene');
+    scene.addEventListener('loaded', function () {
+      if (navigator.geolocation) {
+        navigator.geolocation.watchPosition(function (position) {
+          var altitude = position.coords.altitude || 0;
+          var camera = document.querySelector('[camera]');
+          camera.setAttribute('gps-camera', 'latitude: ' + position.coords.latitude + '; longitude: ' + position.coords.longitude + '; altitude: ' + altitude);
+        });
+      } else {
+        console.log('Geolocation is not supported by this browser.');
+      }
+    });
+  </script>
+  
+  <a-entity gps-camera rotation-reader></a-entity>
+</a-scene>
+  </body>
+</html>

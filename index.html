@@ -13,7 +13,7 @@
         <a-box position="0 0.5 0" material="color: red;"></a-box>
       </a-marker>
       
-      <a-entity camera>
+      <a-entity camera look-controls>
         <a-entity cursor="fuse: true; fuseTimeout: 500" position="0 0 -1" geometry="primitive: ring; radiusInner: 0.02; radiusOuter: 0.03;" material="color: white; shader: flat">
           <a-animation begin="click" easing="ease-in" attribute="scale" fill="backwards" from="0.1 0.1 0.1" to="1 1 1" dur="150"></a-animation>
           <a-animation begin="cursor-fusing" easing="ease-in" attribute="scale" fill="forwards" from="1 1 1" to="0.1 0.1 0.1" dur="500"></a-animation>
@@ -63,72 +63,19 @@
             navigator.geolocation.watchPosition(function (position) {
               var altitude = position.coords.altitude || 0;
               var camera = document.querySelector('[camera]');
-              camera.setAttribute('gps-camera', 'latitude: ' + position.coords.latitude + '; longitude: ' + position.coords.longitude + '; altitude: ' + altitude + ';');
-            });
-          }
-        });
-        
-        var tree = document.createElement('a-entity');
-        tree.setAttribute('gltf-model', '#tree-model');
-tree.setAttribute('scale', '0.05 0.05 0.05');
-tree.setAttribute('position', {
-x: getRandomPosition(-50, 50),
-y: 0,
-z: getRandomPosition(-50, 50)
+              camera.setAttribute('gps-camera', 'latitude: ' + position.coords.latitude + '; longitude: ' + position.coords.longitude + '; altitude: ' + altitude);
 });
-scene.appendChild(tree);
+} else {
+console.log('Geolocation is not supported by this browser.');
 }
-  // Update the position of the assets based on the user's location
-  function updateAssetPositions(userPosition) {
-    // Loop through all the assets
-    for (var i = 0; i < assets.length; i++) {
-      var asset = assets[i];
-      // Calculate the distance between the user and the asset
-      var distance = getDistance(userPosition, asset.getAttribute('position'));
-
-      // If the asset is within the visible distance range, set its visibility to true
-      if (distance <= visibleDistance) {
-        asset.setAttribute('visible', true);
-      }
-      // Otherwise, set its visibility to false
-      else {
-        asset.setAttribute('visible', false);
-      }
-
-      // Calculate the angle between the user and the asset
-      var angle = getAngle(userPosition, asset.getAttribute('position'));
-
-      // Set the rotation of the asset to face the user
-      asset.setAttribute('rotation', {
-        x: 0,
-        y: -angle,
-        z: 0
-      });
-    }
-  }
-
-  // Get a random position within a range
-  function getRandomPosition(min, max) {
-    return Math.random() * (max - min) + min;
-  }
-
-  // Get the distance between two positions
-  function getDistance(position1, position2) {
-    var dx = position1.x - position2.x;
-    var dy = position1.y - position2.y;
-    var dz = position1.z - position2.z;
-    return Math.sqrt(dx * dx + dy * dy + dz * dz);
-  }
-
-  // Get the angle between two positions
-  function getAngle(position1, position2) {
-    var dx = position2.x - position1.x;
-    var dz = position2.z - position1.z;
-    return (Math.atan2(dz, dx) * 180 / Math.PI) - 90;
-  }
-
-  // Call the setup function when the scene is loaded
-  scene.addEventListener('loaded', setup);
-</script>
-  </body>
-</html>
+});
+          </script>
+</head>
+<body>
+  <a-scene>
+    <a-entity gps-camera rotation-reader></a-entity>
+  </a-scene>
+</body>
+  </html>
+</html> 
+<!-- End of HTML code --> 

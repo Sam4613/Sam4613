@@ -1,85 +1,77 @@
-<!DOCTYPE html>
 <html>
   <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>GPS Markerless AR</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
     <script src="https://threejs.org/build/three.min.js"></script>
   </head>
   <body>
     <a-scene>
       <a-assets>
-        <a-asset-item id="target-model" src="target.glb"></a-asset-item>
+        <a-asset-item id="box-model" src="path/to/box.glb"></a-asset-item>
       </a-assets>
-      <a-marker-camera preset="hiro">
-        <a-entity id="user" camera position="0 1.6 0" look-controls></a-entity>
-      </a-marker-camera>
-      <a-entity id="target" gltf-model="#target-model" scale="0.5 0.5 0.5"></a-entity>
-      <a-entity id="distance-meter" position="0 -0.5 -2" text="value: Distance: 0m"></a-entity>
+      
+      <a-entity id="camera" camera look-controls></a-entity>
+
+      <a-entity id="box-container"></a-entity>
     </a-scene>
+    
     <script>
-      var targetLatitude = 0;
-      var targetLongitude = 0;
-      var userHeight = 1.6; // in meters
-      var userHeading = 0; // in degrees
-      var distance = 0;
-      var distanceMeter = document.getElementById('distance-meter');
+      // Step 2: Set up GPS
+      navigator.geolocation.watchPosition(successCallback, errorCallback, {enableHighAccuracy: true});
 
-      navigator.geolocation.watchPosition(function(position) {
-        var userLatitude = position.coords.latitude;
-        var userLongitude = position.coords.longitude;
+      function successCallback(position) {
+        const userLatitude = position.coords.latitude;
+        const userLongitude = position.coords.longitude;
+        // use userLatitude and userLongitude to calculate the position of the box
 
-        // Calculate distance and bearing between user and target
-        var lat1 = degToRad(userLatitude);
-        var lon1 = degToRad(userLongitude);
-        var lat2 = degToRad(targetLatitude);
-        var lon2 = degToRad(targetLongitude);
-        var dLat = lat2 - lat1;
-        var dLon = lon2 - lon1;
-        var a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
-        var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-        distance = 6371000 * c;
+        // Step 3: Set up device orientation
+        window.addEventListener('deviceorientation', handleOrientation);
 
-        // Calculate user's heading
-        var y = Math.sin(lon2 - lon1) * Math.cos(lat2);
-        var x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(lon2 - lon1);
-        userHeading = radToDeg(Math.atan2(y, x));
+        function handleOrientation(event) {
+          const alpha = event.alpha; // rotation around the z-axis
+          const beta = event.beta; // rotation around the x-axis
+          const gamma = event.gamma; // rotation around the y-axis
+          // use alpha, beta, and gamma to calculate the position of the box
 
-        // Update user's position
-        var user = document.getElementById('user');
-        user.setAttribute('position', '0 ' + userHeight + ' 0');
-        user.object3D.rotation.y = degToRad(-userHeading);
+          // Step 4: Calculate the position of the 3D object
+          const boxDistance = 10; // distance from the user's location to the box in meters
+          const boxPosition = calculatePosition(userLatitude, userLongitude, alpha, boxDistance);
+          // Step 5: Render the 3D object
+          renderBox(boxPosition);
+        }
+      }
 
-        // Update distance meter
-        distanceMeter.setAttribute('text', 'value: Distance: ' + Math.round(distance) + 'm');
+      function errorCallback(error) {
+        console.error('Error getting GPS data:', error);
+      }
 
-        // Update target position
-        var target = document.getElementById('target');
-        var x = -distance * Math.sin(degToRad(userHeading));
-        var z = -distance * Math.cos(degToRad(userHeading));
-        target.setAttribute('position', x + ' 0 ' + z);
-            // Set target height to user's eye level
-    var raycaster = new THREE.Raycaster();
-    raycaster.setFromCamera(new THREE.Vector2(0, 0), user.getObject3D('camera'));
-    var intersects = raycaster.intersectObject(target.object3D, true);
-    if (intersects.length > 0) {
-      var distanceFromUserToTarget = intersects[0].distance;
-      var targetHeight = userHeight - intersects[0].point.y;
-      targetHeight = targetHeight < 0 ? 0 : targetHeight;
-      target.setAttribute('position', x + ' ' + targetHeight + ' ' + z);
-    }
-  }, function(error) {
-    console.log('Error getting user location: ' + error.message);
-  });
+      // Step 4: Calculate the position of the 3D object
+      function calculatePosition(userLatitude, userLongitude, alpha, boxDistance) {
+        const boxLatitude = userLatitude + (boxDistance / 111111) * Math.cos(alpha * Math.PI / 180);
+        const boxLongitude = userLongitude + (boxDistance / 111111) * Math.sin(alpha * Math.PI / 180) / Math.cos(userLatitude * Math.PI / 180);
+        // return an object with the calculated latitude and longitude
+        return {latitude: boxLatitude, longitude: boxLongitude};
+      }
 
-  function degToRad(degrees) {
-    return degrees * Math.PI / 180;
-  }
+      // Step 5: Render the 3D object
+      function renderBox(position) {
+        const boxContainer = document.querySelector('#box-container');
+        const boxModel = document.querySelector('#box-model');
+        const box = boxModel.cloneNode();
+        box.setAttribute('position', `${position.longitude} 1 ${position.latitude}`);
+        boxContainer.appendChild(box);
+      }
 
-  function radToDeg(radians) {
-    return radians * 180 / Math.PI;
-  }
-</script>
-</body>
+      // Step 6: Implement walking towards the object
+      function updateBoxPosition() {
+        const boxDistance = 10; // distance from the user's location to the box in meters
+        const boxPosition = calculatePosition(userLatitude, userLongitude, alpha, boxDistance);
+        const box = document.querySelector('#box-container a-gltf-model');
+        box.setAttribute('position', `${boxPosition.longitude} 1 ${boxPosition.latitude}`);
+      }
+
+      setInterval(updateBoxPosition, 1000); // update box position every second
+    </script>
+  </body>
 </html>
 ```

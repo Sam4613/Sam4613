@@ -1,38 +1,48 @@
 <!DOCTYPE html>
 <html>
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>AR.js and A-Frame Example</title>
-  <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
-  <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
-  <script src="https://threejs.org/build/three.min.js"></script>
-</head>
-<body>
-  <a-scene embedded arjs>
-    <a-assets>
-      <a-asset-item id="model" src="https://cdn.glitch.com/7de49655-5a6c-4486-83b6-5b6af5f71e5d%2Fmodel.glb"></a-asset-item>
-    </a-assets>
-    <a-marker-camera preset="hiro">
-      <a-entity gltf-model="#model"></a-entity>
-    </a-marker-camera>
-  </a-scene>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>A-Frame AR Example</title>
+    <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
+    <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
+    <script src="https://threejs.org/build/three.min.js"></script>
+  </head>
+  <body>
+    <a-scene embedded arjs>
+      <a-entity camera look-controls>
+      </a-entity>
+      <a-entity position="0 0 0" rotation="0 0 0" scale="1 1 1" gltf-model="https://cdn.aframe.io/models/gltf/monkey/monkey.gltf"></a-entity>
+    </a-scene>
+    <script>
+      navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia;
+      window.addEventListener('load', function() {
+        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+          navigator.mediaDevices.getUserMedia({ video: true }).then(function(stream) {
+            // Video feed available
+          }).catch(function(err) {
+            console.error("Could not get video feed from camera:", err);
+          });
+        } else if (navigator.getUserMedia) {
+          navigator.getUserMedia({ video: true }, function(stream) {
+            // Video feed available
+          }, function(err) {
+            console.error("Could not get video feed from camera:", err);
+          });
+        } else {
+          console.error("Could not access camera.");
+        }
 
-  <script>
-    // ask for camera and location permission
-    navigator.mediaDevices.getUserMedia({ video: true, audio: false })
-      .then(function(stream) {
-        console.log('Camera permission granted');
-      })
-      .catch(function(error) {
-        console.log('Camera permission denied: ', error);
+        if ("geolocation" in navigator) {
+          navigator.geolocation.getCurrentPosition(function(position) {
+            // User location available
+          }, function(err) {
+            console.error("Could not get user location:", err);
+          });
+        } else {
+          console.error("Geolocation is not available.");
+        }
       });
-
-    navigator.geolocation.getCurrentPosition(function(position) {
-      console.log('Location permission granted');
-    }, function(error) {
-      console.log('Location permission denied: ', error);
-    });
-  </script>
-</body>
+    </script>
+  </body>
 </html>

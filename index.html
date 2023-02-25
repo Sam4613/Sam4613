@@ -1,42 +1,130 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <title>Markerless AR with A-Frame, AR.js, and Three.js</title>
-    <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
-    <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r123/three.min.js"></script>
-  </head>
-  <body>
-    <a-scene embedded arjs>
-      <a-assets>
-        <a-asset-item id="my-model" src="https://cdn.glitch.com/60427e9c-58d3-42da-b663-e7dbbc61de8c%2Fflamingo.glb?v=1588452801839"></a-asset-item>
-      </a-assets>
-      <a-marker-camera preset="hiro">
-        <a-entity id="model" gltf-model="#my-model" scale="0.1 0.1 0.1" position="0 0 -10"></a-entity>
-      </a-marker-camera>
-    </a-scene>
-    
+<head>
+  <meta charset="utf-8">
+  <title>GPS-based markerless platform</title>
+  <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
+  <script src="https://threejs.org/build/three.min.js"></script>
+</head>
+<body>
+  <a-scene>
+    <a-assets>
+      <!-- Add your 3D models here -->
+    </a-assets>
+
+    <a-entity id="camera" camera look-controls>
+      <a-cursor></a-cursor>
+    </a-entity>
+
+    <a-entity id="user"></a-entity>
+
     <script>
-      AFRAME.registerComponent('resize-on-walk', {
-        init: function () {
-          this.el.addEventListener('componentchanged', (evt) => {
-            if (evt.detail.name === 'position' && this.el.sceneEl.camera) {
-              const distance = this.el.object3D.position.distanceTo(this.el.sceneEl.camera.el.object3D.position);
-              const newScale = 1 - distance / 5;
-              this.el.setAttribute('scale', `${newScale} ${newScale} ${newScale}`);
-            }
-          });
+      var scene = document.querySelector('a-scene');
+      var user = document.querySelector('#user');
+
+      // Get GPS data
+      navigator.geolocation.watchPosition(function (position) {
+        // Store user's position and heading
+        var userLatitude = position.coords.latitude;
+        var userLongitude = position.coords.longitude;
+        var userHeading = position.coords.heading;
+
+        // Convert GPS data to 3D coordinates
+        var x = longitudeToX(userLongitude);
+        var y = latitudeToY(userLatitude);
+        var z = 0;
+
+        // Position user and camera
+        user.setAttribute('position', { x: x, y: y, z: z });
+        user.setAttribute('rotation', { x: 0, y: -userHeading, z: 0 });
+        var camera = document.querySelector('#camera');
+        camera.setAttribute('position', { x: 0, y: 1.6, z: 0 });
+      });
+
+      function longitudeToX(longitude) {
+        return (longitude + 180) / 360 * 1024 - 512;
+      }
+
+      function latitudeToY(latitude) {
+        var sinLatitude = Math.sin(latitude * Math.PI / 180);
+        return 256 - Math.log((1 + sinLatitude) / (1 - sinLatitude)) / (4 * Math.PI) * 1024;
+      }
+
+      function degToRad(degrees) {
+        return degrees * Math.PI / 180;
+      }
+
+      function calculateDistance(lat1, lon1, lat2, lon2) {
+        var R = 6371; // km
+        var dLat = degToRad(lat2 - lat1);
+        var dLon = degToRad(lon2 - lon1);
+        var a =
+          Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+          Math.cos(degToRad(lat1)) * Math.cos(degToRad(lat2)) *
+          Math.sin(dLon / 2) * Math.sin(dLon / 2);
+        var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return R * c * 1000; // m
+      }
+
+      // Create 3D object and position it
+      var object = document.createElement('a-entity');
+      object.setAttribute('gltf-model', '#model');
+      scene.appendChild(object);
+
+      var objectLatitude = 45.5203; // Replace with your object's latitude
+      var objectLongitude = -122.6742; // Replace with your object's longitude
+
+      function updateObjectPosition() {
+        // Convert object GPS data to 3D coordinates
+        var x = longitudeToX(objectLongitude);
+        var y = latitudeToY(objectLatitude);
+        var z = 0;
+            // Position object
+    object.setAttribute('position', { x: x, y: y, z: z });
+
+    // Calculate distance between user and object
+    var userLatitude = user.getAttribute('position').y;
+    var userLongitude = user.getAttribute('position').x;
+    var distance = calculateDistance(userLatitude, userLongitude, objectLatitude, objectLongitude);
+
+    // If user is close to object, show it at human eye level
+    if (distance < 10) {
+      object.setAttribute('position', { x: x, y: y + 1.6, z: z });
+    } else {
+      object.setAttribute('position', { x: x, y: y, z: z });
+    }
+
+    // If user is facing the object, allow them to walk towards it
+    var userRotation = user.getAttribute('rotation').y;
+    var heading = calculateHeading(userLatitude, userLongitude, objectLatitude, objectLongitude);
+    var headingDifference = Math.abs(userRotation - heading);
+    if (distance < 10 && headingDifference < 20) {
+      document.addEventListener('keydown', function (event) {
+        var code = event.code;
+        if (code === 'KeyW') {
+          var userPosition = user.getAttribute('position');
+          userPosition.x += Math.sin(userRotation * Math.PI / 180) * 0.1;
+          userPosition.y += Math.cos(userRotation * Math.PI / 180) * -0.1;
+          user.setAttribute('position', userPosition);
         }
       });
-    
-      AFRAME.registerComponent('human-level', {
-        init: function () {
-          this.el.object3D.position.y = this.el.object3D.position.y - 1.6;
-        }
-      });
-    
-      document.querySelector('#model').setAttribute('resize-on-walk', '');
-      document.querySelector('#model').setAttribute('human-level', '');
-    </script>
+    }
+  }
+
+  // Calculate heading between two GPS coordinates
+  function calculateHeading(lat1, lon1, lat2, lon2) {
+    var y = Math.sin(lon2 - lon1) * Math.cos(lat2);
+    var x = Math.cos(lat1) * Math.sin(lat2) -
+            Math.sin(lat1) * Math.cos(lat2) * Math.cos(lon2 - lon1);
+    var heading = Math.atan2(y, x) * 180 / Math.PI;
+    return heading;
+  }
+
+  // Call updateObjectPosition every frame
+  setInterval(function () {
+    updateObjectPosition();
+  }, 1000 / 60);
+</script>
+</a-scene>
 </body>
-</html>    
+</html>

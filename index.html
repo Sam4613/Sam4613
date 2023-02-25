@@ -9,39 +9,38 @@
     <script src="https://raw.githack.com/jeromeetienne/AR.js/master/aframe/build/aframe-ar-nft.js"></script>
   </head>
   <body>
-    <a-scene embedded arjs>
-      <a-marker preset="hiro">
+    <a-scene embedded arjs='sourceType: webcam;'>
+      <a-marker type='pattern' url='path/to/marker.patt'>
         <a-box position="0 0.5 0" material="color: red;"></a-box>
       </a-marker>
-      
-      <a-entity camera look-controls>
-        <a-entity cursor="fuse: true; fuseTimeout: 500" position="0 0 -1" geometry="primitive: ring; radiusInner: 0.02; radiusOuter: 0.03;" material="color: white; shader: flat">
-          <a-animation begin="click" easing="ease-in" attribute="scale" fill="backwards" from="0.1 0.1 0.1" to="1 1 1" dur="150"></a-animation>
-          <a-animation begin="cursor-fusing" easing="ease-in" attribute="scale" fill="forwards" from="1 1 1" to="0.1 0.1 0.1" dur="500"></a-animation>
-        </a-entity>
-      </a-entity>
-      
-      <a-assets>
-        <a-asset-item id="tree" src="path/to/tree.glb"></a-asset-item>
-      </a-assets>
-      
-      <script>
-        AFRAME.registerComponent('rotate-on-tick', {
-          tick: function (time, timeDelta) {
-            this.el.object3D.rotation.y += timeDelta / 1000 * this.data.speed;
-          }
-        });
-        
-        AFRAME.registerComponent('show-at-distance', {
-          schema: {
-            distance: { type: 'number', default: 2 }
-          },
-          init: function () {
-            var camera = document.querySelector('[camera]');
-            var distance = this.data.distance;
-            this.el.setAttribute('visible', false);
-            this.el.addEventListener('loaded', function () {
-              var model = this.el.getObject3D('mesh');
+        <a-entity camera look-controls>
+    <a-entity cursor="fuse: true; fuseTimeout: 500" position="0 0 -1" geometry="primitive: ring; radiusInner: 0.02; radiusOuter: 0.03;" material="color: white; shader: flat">
+      <a-animation begin="click" easing="ease-in" attribute="scale" fill="backwards" from="0.1 0.1 0.1" to="1 1 1" dur="150"></a-animation>
+      <a-animation begin="cursor-fusing" easing="ease-in" attribute="scale" fill="forwards" from="1 1 1" to="0.1 0.1 0.1" dur="500"></a-animation>
+    </a-entity>
+  </a-entity>
+  
+  <a-assets>
+    <a-asset-item id="tree" src="path/to/tree.glb"></a-asset-item>
+  </a-assets>
+  
+  <script>
+    AFRAME.registerComponent('rotate-on-tick', {
+      tick: function (time, timeDelta) {
+        this.el.object3D.rotation.y += timeDelta / 1000 * this.data.speed;
+      }
+    });
+    
+    AFRAME.registerComponent('show-at-distance', {
+      schema: {
+        distance: { type: 'number', default: 2 }
+      },
+      init: function () {
+        var camera = document.querySelector('[camera]');
+        var distance = this.data.distance;
+        this.el.setAttribute('visible', false);
+        this.el.addEventListener('loaded', function () {
+          var model = this.el.getObject3D('mesh');
 var bbox = new THREE.Box3().setFromObject(model);
 var size = new THREE.Vector3();
 bbox.getSize(size);
@@ -51,27 +50,30 @@ this.setAttribute('visible', true);
 });
 }
 });
-            AFRAME.registerComponent('look-at-camera', {
-      tick: function () {
-        this.el.object3D.lookAt(this.el.sceneEl.camera.getWorldPosition());
-      }
-    });
-    
+AFRAME.registerComponent('look-at-camera', {
+tick: function () {
+this.el.object3D.lookAt(this.el.sceneEl.camera.getWorldPosition());
+}
+});
     var scene = document.querySelector('a-scene');
-    scene.addEventListener('loaded', function () {
-      if (navigator.geolocation) {
-        navigator.geolocation.watchPosition(function (position) {
-          var altitude = position.coords.altitude || 0;
-          var camera = document.querySelector('[camera]');
-          camera.setAttribute('gps-camera', 'latitude: ' + position.coords.latitude + '; longitude: ' + position.coords.longitude + '; altitude: ' + altitude);
-        });
-      } else {
-        console.log('Geolocation is not supported by this browser.');
-      }
-    });
+scene.addEventListener('loaded', function () {
+  if (navigator.geolocation) {
+    navigator.geolocation.watchPosition(function (position) {
+      var altitude = position.coords.altitude || 0;
+      var camera = document.querySelector('[camera]');
+      camera.setAttribute('gps-camera', 'latitude: ' + position.coords.latitude + '; longitude: ' + position.coords.longitude + ';altitude: ' + altitude);
+        // Add a tree entity at a fixed location relative to the camera
+  var tree = document.createElement('a-entity');
+  tree.setAttribute('gps-entity-place', `latitude: ${position.coords.latitude}; longitude: ${position.coords.longitude};`);
+  tree.setAttribute('show-at-distance', 'distance: 20');
+  tree.setAttribute('look-at-camera', '');
+  tree.setAttribute('rotate-on-tick', 'speed: 10');
+  tree.setAttribute('gltf-model', '#tree');
+  scene.appendChild(tree);
+});
   </script>
-  
-  <a-entity gps-camera rotation-reader></a-entity>
+<a-entity gps-camera rotation-reader></a-entity>
 </a-scene>
+
   </body>
 </html>

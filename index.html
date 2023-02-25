@@ -11,17 +11,16 @@
       <a-assets>
         <a-asset-item id="my-model" src="https://cdn.glitch.com/60427e9c-58d3-42da-b663-e7dbbc61de8c%2Fflamingo.glb?v=1588452801839"></a-asset-item>
       </a-assets>
-
       <a-marker-camera preset="hiro">
         <a-entity id="model" gltf-model="#my-model" scale="0.1 0.1 0.1" position="0 0 -10"></a-entity>
       </a-marker-camera>
     </a-scene>
-
+    
     <script>
       AFRAME.registerComponent('resize-on-walk', {
         init: function () {
           this.el.addEventListener('componentchanged', (evt) => {
-            if (evt.detail.name === 'position') {
+            if (evt.detail.name === 'position' && this.el.sceneEl.camera) {
               const distance = this.el.object3D.position.distanceTo(this.el.sceneEl.camera.el.object3D.position);
               const newScale = 1 - distance / 5;
               this.el.setAttribute('scale', `${newScale} ${newScale} ${newScale}`);
@@ -29,15 +28,15 @@
           });
         }
       });
-
+    
       AFRAME.registerComponent('human-level', {
         init: function () {
           this.el.object3D.position.y = this.el.object3D.position.y - 1.6;
         }
       });
-
+    
       document.querySelector('#model').setAttribute('resize-on-walk', '');
       document.querySelector('#model').setAttribute('human-level', '');
     </script>
-  </body>
-</html>
+</body>
+</html>    

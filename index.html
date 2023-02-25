@@ -1,20 +1,38 @@
 <!DOCTYPE html>
 <html>
 <head>
-	<title>A-frame AR Example</title>
-	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
-	<script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
-	<script src="https://threejs.org/build/three.min.js"></script>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AR.js and A-Frame Example</title>
+  <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
+  <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
+  <script src="https://threejs.org/build/three.min.js"></script>
 </head>
 <body>
-	<a-scene embedded arjs>
-		<a-marker preset="custom">
-			<a-entity position="0 0 0" rotation="0 0 0" scale="1 1 1">
-				<a-entity obj-model="obj: url(assets/model.obj); mtl: url(assets/model.mtl)"></a-entity>
-			</a-entity>
-		</a-marker>
-		<a-camera-static></a-camera-static>
-	</a-scene>
+  <a-scene embedded arjs>
+    <a-assets>
+      <a-asset-item id="model" src="https://cdn.glitch.com/7de49655-5a6c-4486-83b6-5b6af5f71e5d%2Fmodel.glb"></a-asset-item>
+    </a-assets>
+    <a-marker-camera preset="hiro">
+      <a-entity gltf-model="#model"></a-entity>
+    </a-marker-camera>
+  </a-scene>
+
+  <script>
+    // ask for camera and location permission
+    navigator.mediaDevices.getUserMedia({ video: true, audio: false })
+      .then(function(stream) {
+        console.log('Camera permission granted');
+      })
+      .catch(function(error) {
+        console.log('Camera permission denied: ', error);
+      });
+
+    navigator.geolocation.getCurrentPosition(function(position) {
+      console.log('Location permission granted');
+    }, function(error) {
+      console.log('Location permission denied: ', error);
+    });
+  </script>
 </body>
 </html>
